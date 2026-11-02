@@ -8,9 +8,10 @@ import random
 import numpy as np
 
 # ================= 1. 数据准备 =================
-data_dir='D:\\施研瑞的文件\\施研瑞\\2026秋\\26卓工中阶数据\\data\\01_classification_2d\\MedNIST' # 如果文件夹名不同，改这里
+data_dir='01_classification_2d/MedNIST' # 如果文件夹名不同，改这里
 
-def set_seed(seed=42):
+for seed in [42, 43, 44, 45, 46]:
+  def set_seed(seed=seed):
     random.seed(seed)          # Python 内置的随机数
     np.random.seed(seed)       # NumPy 的随机数
     torch.manual_seed(seed)    # PyTorch 的 CPU 随机数
@@ -22,29 +23,29 @@ def set_seed(seed=42):
     os.environ['PYTHONHASHSEED']=str(seed)
 
 # 在代码一开始立刻调用
-set_seed(42)
+  set_seed(seed)
 
 # 医学图像通常做简单的缩放和转 Tensor
-transform=transforms.Compose([
+  transform=transforms.Compose([
     transforms.Resize((64, 64)), # MedNIST 原图好像就是 64x64
     transforms.ToTensor(),
-])
+  ])
 
 # 直接用 ImageFolder 读取，它会自动识别 6 个文件夹的名字作为标签
-full_dataset=datasets.ImageFolder(root=data_dir,transform=transform)
-print(f"总样本数: {len(full_dataset)}")
-print(f"类别映射: {full_dataset.class_to_idx}")
+  full_dataset=datasets.ImageFolder(root=data_dir,transform=transform)
+  print(f"总样本数: {len(full_dataset)}")
+  print(f"类别映射: {full_dataset.class_to_idx}")
 
-# 划分训练集和验证集 (80% 训练, 20% 验证)
-train_size=int(0.8*len(full_dataset))
-val_size=len(full_dataset)-train_size
-train_dataset,val_dataset=random_split(full_dataset,[train_size,val_size])
+  # 划分训练集和验证集 (80% 训练, 20% 验证)
+  train_size=int(0.8*len(full_dataset))
+  val_size=len(full_dataset)-train_size
+  train_dataset,val_dataset=random_split(full_dataset,[train_size,val_size])
 
-train_loader=DataLoader(train_dataset,batch_size=64,shuffle=True)
-val_loader=DataLoader(val_dataset,batch_size=64,shuffle=False)
+  train_loader=DataLoader(train_dataset,batch_size=64,shuffle=True)
+  val_loader=DataLoader(val_dataset,batch_size=64,shuffle=False)
 
 # ================= 2. 定义极简 CNN 模型 =================
-class SimpleCNN(nn.Module):
+  class SimpleCNN(nn.Module):
     def __init__(self,num_classes=6):
         super().__init__()
         self.features=nn.Sequential(
@@ -68,16 +69,16 @@ class SimpleCNN(nn.Module):
         return x
 
 # ================= 3. 训练与验证 =================
-device=torch.device("cuda"if torch.cuda.is_available()else "cpu")
-print(f"使用设备: {device}")
+  device=torch.device("cuda"if torch.cuda.is_available()else "cpu")
+  print(f"使用设备: {device}")
 
-model=SimpleCNN(num_classes=6).to(device)
-criterion=nn.CrossEntropyLoss()
-optimizer=optim.Adam(model.parameters(),lr=1e-3)
+  model=SimpleCNN(num_classes=6).to(device)
+  criterion=nn.CrossEntropyLoss()
+  optimizer=optim.Adam(model.parameters(),lr=1e-3)
 
-epochs=3 # 先跑 3 轮看看
+  epochs=3 # 先跑 3 轮看看
 
-for epoch in range(epochs):
+  for epoch in range(epochs):
     # --- 训练阶段 ---
     model.train()
     running_loss=0.0
