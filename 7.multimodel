@@ -1,0 +1,173 @@
+import os
+import random
+import numpy as np
+import pandas as pd
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import Dataset, DataLoader, random_split
+from torchvision import transforms
+from PIL import Image
+
+# ================= 0. 固定随机种子 =================
+def set_seed(seed=42):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    os.environ['PYTHONHASHSEED'] = str(seed)
+
+set_seed(42)
+
+# ================= 1. 自定义多通道数据集 =================
+class RxRx1Dataset(Dataset):
+    def __init__(self, csv_file, img_dir, transform=None):
+        self.img_dir = img_dir
+        self.transform = transform
+        
+        # 读取 CSV
+        self.df = pd.read_csv(csv_file)
+        
+        # 核心修改：自动过滤掉硬盘里没有的图
+        def check_exists(row):
+            exp = str(row['experiment']).strip()
+            plate = int(row['plate'])
+            well = str(row['well']).strip()
+            site = int(row['site'])
+            # 循环检查 1 到 6 通道是否全都在
+            for w in range(1, 7):
+                p = os.path.join(self.img_dir, exp, f"Plate{plate}", f"{well}_s{site}_w{w}.png")
+                if not os.path.exists(p):
+                    return False
+            return True
+
+        self.df = self.df[self.df.apply(check_exists, axis=1)].reset_index(drop=True)
+        
+        print(f"过滤后真实存在的有效样本数: {len(self.df)}")
+        print("标签分布:\n", self.df['cell_type'].value_counts())
+
+        # 建立类别映射字典 (4 类)
+        self.class_names = ['HEPG2', 'HUVEC', 'RPE', 'U2OS']
+        self.class_to_idx = {name: idx for idx, name in enumerate(self.class_names)}
+
+    def __len__(self):
+        return len(self.df)
+
+    def __getitem__(self, idx):
+        row = self.df.iloc[idx]
+        
+        experiment = str(row['experiment']).strip()
+        plate = int(row['plate'])            
+        well = str(row['well']).strip()              
+        site = int(row['site'])              
+        
+        channels = []
+        for w in range(1, 7): # w1 到 w6
+            img_name = f"{well}_s{site}_w{w}.png"
+            img_path = os.path.join(self.img_dir, experiment, f"Plate{plate}", img_name)
+            
+            # 读图，转为单通道灰度图，应用变换
+            img = Image.open(img_path).convert('L') 
+            if self.transform:
+                img = self.transform(img) 
+            channels.append(img)
+        
+        # 在通道维度拼接成 [6, 224, 224]
+        img_tensor = torch.cat(channels, dim=0)
+        
+        # 获取标签
+        label = self.class_to_idx[row['cell_type']]
+        
+        return img_tensor, label
+
+# ================= 2. 数据准备与划分 =================
+transform = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.ToTensor()
+])
+
+# 实例化（去掉 split 参数，全量读取）
+full_dataset = RxRx1Dataset(
+    csv_file='07_multimodal/rxrx1_subset_monai/metadata.csv', 
+    img_dir='07_multimodal/rxrx1_subset_monai/images', 
+    transform=transform
+)
+
+# 因为测试集在本地是空的，我们强行在全部有效数据里切 80% 训练，20% 验证
+train_size = int(0.8 * len(full_dataset))
+val_size = len(full_dataset) - train_size
+train_dataset, val_dataset = random_split(full_dataset, [train_size, val_size])
+
+# batch_size 设小一点，因为数据极少
+train_loader = DataLoader(train_dataset, batch_size=4, shuffle=True)
+val_loader = DataLoader(val_dataset, batch_size=4, shuffle=False)
+
+# ================= 3. 定义多通道 CNN 模型 =================
+class MultiChannelCNN(nn.Module):
+    def __init__(self, num_classes=4):
+        super().__init__()
+        self.features = nn.Sequential(
+            nn.Conv2d(6, 16, kernel_size=3, padding=1), # 👈 核心：输入通道为 6
+            nn.ReLU(),
+            nn.MaxPool2d(2),
+            nn.Conv2d(16, 32, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(2)
+        )
+        # 224x224 经过两次池化变成 56x56
+        self.classifier = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(32 * 56 * 56, 128),
+            nn.ReLU(),
+            nn.Linear(128, num_classes)
+        )
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.classifier(x)
+        return x
+
+# ================= 4. 训练循环 =================
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"使用设备: {device}")
+
+model = MultiChannelCNN(num_classes=4).to(device)
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=1e-3)
+
+epochs = 10 # 因为数据少，多跑几轮让它收敛
+
+for epoch in range(epochs):
+    # --- 训练阶段 ---
+    model.train()
+    running_loss = 0.0
+    for images, labels in train_loader:
+        images, labels = images.to(device), labels.to(device)
+        
+        optimizer.zero_grad()
+        outputs = model(images)
+        loss = criterion(outputs, labels)
+        loss.backward()
+        optimizer.step()
+        
+        running_loss += loss.item()
+    
+    # --- 验证阶段 ---
+    model.eval()
+    correct = 0
+    total = 0
+    with torch.no_grad():
+        for images, labels in val_loader:
+            images, labels = images.to(device), labels.to(device)
+            outputs = model(images)
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+            
+    val_acc = 100 * correct / total if total > 0 else 0
+    print(f"Epoch [{epoch+1}/{epochs}] - Train Loss: {running_loss/len(train_loader):.4f} - Val Acc: {val_acc:.2f}%")
+
+print("训练完成！")
