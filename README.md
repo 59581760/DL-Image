@@ -43,4 +43,4 @@ This is a Deep Learning exercise code based on related medical imaging data. It 
 > - **Note:** In case of any discrepancies between translations, the English version shall prevail.
 > - **声明:** 不同版本的说明若有冲突，请以英文版为准。
 > - **聲明:** 不同版本的說明若有衝突，請以英文版為準。
-> - **注意事項:** 異なるバージョン間で齟齬がある場合は、英語版を正とします。
+> - **注意事項:** 異なるバージョン間で齟齬がある場合は、英語版を正としてください。
