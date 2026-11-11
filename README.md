@@ -5,6 +5,7 @@ This is a Deep Learning exercise code based on related medical imaging data. It 
 
 **Data Sources:**
 - `01`: MedNIST
+- `06`: EndoVis2017 
 - `07`: RXRX1
 
 ---
@@ -14,6 +15,7 @@ This is a Deep Learning exercise code based on related medical imaging data. It 
 
 **数据来源：**
 - `01`: MedNIST
+- `06`: EndoVis2017
 - `07`: RXRX1
 
 ---
@@ -23,6 +25,7 @@ This is a Deep Learning exercise code based on related medical imaging data. It 
 
 **資料來源：**
 - `01`: MedNIST
+- `06`: EndoVis2017
 - `07`: RXRX1
 
 ---
@@ -32,6 +35,7 @@ This is a Deep Learning exercise code based on related medical imaging data. It 
 
 **データソース：**
 - `01`: MedNIST
+- `06`: EndoVis2017
 - `07`: RXRX1
 
 ---
