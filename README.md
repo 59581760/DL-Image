@@ -5,6 +5,7 @@ This is a Deep Learning exercise code based on related medical imaging data. It 
 
 **Data Sources:**
 - `01`: MedNIST
+- `02`: BRATS (The description about this part, please view [2.segmentation.md](2.segmentation.md))
 - `06`: EndoVis2017 (The description about this part, please view [6.endoscopy.md](6.endoscopy.md))
 - `07`: RXRX1
 
@@ -15,7 +16,8 @@ This is a Deep Learning exercise code based on related medical imaging data. It 
 
 **数据来源：**
 - `01`: MedNIST
-- `06`: EndoVis2017 (有关该部分的说明，请浏览[6.endoscopy.md](6.endoscopy.md))
+- `02`: BRATS（有关该部分的说明，请浏览[2.segmentation.md](2.segmentation.md)）
+- `06`: EndoVis2017（有关该部分的说明，请浏览[6.endoscopy.md](6.endoscopy.md)）
 - `07`: RXRX1
 
 ---
@@ -25,7 +27,8 @@ This is a Deep Learning exercise code based on related medical imaging data. It 
 
 **データソース：**
 - `01`: MedNIST
-- `06`: EndoVis2017　（この部分の説明については、[6.endoscopy.md](6.endoscopy.md)をご覧ください。）
+- `02`: BRATS（この部分の説明については、[2.segmentation.md](2.segmentation.md])をご覧ください。）
+- `06`: EndoVis2017（この部分の説明については、[6.endoscopy.md](6.endoscopy.md)をご覧ください。）
 - `07`: RXRX1
 
 ---
@@ -35,7 +38,8 @@ This is a Deep Learning exercise code based on related medical imaging data. It 
 
 **資料來源：**
 - `01`: MedNIST
-- `06`: EndoVis2017 (有關該部分的說明，請瀏覽[6.endoscopy.md](06_endoscopy.md))
+- `02`: BRAT(有關該部分的說明，請瀏覽[2.segmentation.md](2.segmentation.md))
+- `06`: EndoVis2017(有關該部分的說明，請瀏覽[6.endoscopy.md](6_endoscopy.md))
 - `07`: RXRX1
 
 ---
